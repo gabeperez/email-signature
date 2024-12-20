@@ -38,6 +38,9 @@ A simple, elegant tool for creating professional email signatures with social me
 5. Click "Copy Signature"
 6. Paste into your email client's signature settings
 
+<img width="980" alt="Screenshot 2024-12-20 at 22 54 22" src="https://github.com/user-attachments/assets/389873a5-1eec-4d6e-bea6-1381b4102397" />
+
+
 ## Gmail Setup
 
 1. Open Gmail Settings (⚙️ icon)
@@ -46,6 +49,9 @@ A simple, elegant tool for creating professional email signatures with social me
 4. Create new or select existing signature
 5. Paste your copied signature
 6. Save changes
+
+<img width="765" alt="Screenshot 2024-12-20 at 22 53 31" src="https://github.com/user-attachments/assets/e2a50814-e61c-4817-8172-6cdba862b196" />
+
 
 ## Technical Details
 
