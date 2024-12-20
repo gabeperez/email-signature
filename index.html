@@ -40,6 +40,9 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             box-shadow: 0 2px 20px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
 
         /* Header */
@@ -102,12 +105,13 @@
         .signature-card {
             background: white;
             border-radius: 16px;
-            padding: 16px;
+            padding: 24px;
             display: flex;
             align-items: flex-start;
             gap: 16px;
             margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .profile-image {
@@ -353,11 +357,13 @@
             cursor: pointer;
             transition: all 0.2s ease;
             font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
 
         .copy-btn:hover {
             background: #2d2d2f;
             transform: translateY(-1px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
         }
 
         .copy-btn:active {
@@ -580,6 +586,163 @@
             margin-bottom: 16px;
             font-size: 16px;
         }
+
+        /* Add these styles in your existing <style> section */
+        .instructions {
+            background: #f5f5f7;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .instructions h2 {
+            font-size: 20px;
+            color: #1d1d1f;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .instructions p {
+            color: #1d1d1f;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .instructions ol {
+            margin-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        .instructions li {
+            color: #1d1d1f;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .tip {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            color: #1d1d1f;
+            font-size: 14px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            margin-bottom: 0 !important;
+        }
+
+        /* Optional: Add a subtle hover effect to the signature card */
+        .signature-card:hover {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+            transition: all 0.3s ease;
+        }
+
+        /* Updated instructions modal styles */
+        .instructions-modal .modal {
+            background: white;
+            padding: 32px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 460px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .instructions-container h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .instructions-container p {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #424245;
+            margin-bottom: 24px;
+        }
+
+        .instructions-container ol {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            counter-reset: steps;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .instructions-container li {
+            counter-increment: steps;
+            position: relative;
+            padding-left: 48px;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            font-size: 15px;
+            color: #1d1d1f;
+        }
+
+        .instructions-container li::before {
+            content: counter(steps);
+            position: absolute;
+            left: 0;
+            width: 36px;
+            height: 36px;
+            background: #f5f5f7;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: #0071e3;
+            border: 1px solid rgba(0, 113, 227, 0.1);
+        }
+
+        .tip {
+            background: #f5f5f7;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .tip::before {
+            content: "💡";
+            font-size: 20px;
+        }
+
+        .modal-btn.primary {
+            background: #0071e3;
+            color: white;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 15px;
+        }
+
+        /* Add subtle animation for modal */
+        .instructions-modal {
+            transition: opacity 0.3s ease;
+        }
+
+        .instructions-modal .modal {
+            transform: scale(0.95);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .instructions-modal.active .modal {
+            transform: scale(1);
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -587,7 +750,24 @@
         <div class="header">
             <div class="logo">E-signature<span>Creator</span></div>
             <div class="header-buttons">
+                <button class="tutorial-btn" aria-label="Show instructions">
+                    <i class="fas fa-info-circle"></i>
+                </button>
                 <button class="delete-btn">Clear</button>
+            </div>
+        </div>
+
+        <div class="instructions-modal modal-overlay">
+            <div class="modal instructions-container">
+                <h2>Create Your Professional Email Signature</h2>
+                <p>Build a beautiful, professional email signature in 3 simple steps:</p>
+                <ol>
+                    <li>Click the profile image area to upload your photo</li>
+                    <li>Fill in your details (name, title, and email)</li>
+                    <li>Add your social media links using the + button</li>
+                </ol>
+                <p class="tip">Click "Copy Signature" when you're done to use it in your email client.</p>
+                <button class="modal-btn primary close-instructions">Got it</button>
             </div>
         </div>
 
@@ -730,7 +910,7 @@
 
             // Elements for social icons
             const addSocialBtn = document.querySelector('.add-social-btn');
-            const socialModal = document.querySelector('.modal-overlay:not(#imageUploadModal)');
+            const socialModal = document.querySelector('.modal-overlay:not(.instructions-modal)');
             const socialGrid = document.getElementById('socialGrid');
             const urlInputContainer = document.querySelector('.url-input-container');
             const urlInput = document.querySelector('.modal-input');
@@ -1117,8 +1297,40 @@
                 };
                 return paths[platform] || '';
             }
+
+            const tutorialBtn = document.querySelector('.tutorial-btn');
+            const instructionsModal = document.querySelector('.instructions-modal');
+            const closeInstructionsBtn = document.querySelector('.close-instructions');
+
+            // Update the modal show/hide logic
+            tutorialBtn.addEventListener('click', () => {
+                instructionsModal.style.display = 'flex';
+                // Trigger reflow
+                instructionsModal.offsetHeight;
+                instructionsModal.classList.add('active');
+            });
+
+            const hideModal = () => {
+                instructionsModal.classList.remove('active');
+                setTimeout(() => {
+                    instructionsModal.style.display = 'none';
+                }, 300);
+            };
+
+            closeInstructionsBtn.addEventListener('click', hideModal);
+
+            instructionsModal.addEventListener('click', (e) => {
+                if (e.target === instructionsModal) {
+                    hideModal();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && instructionsModal.style.display === 'flex') {
+                    hideModal();
+                }
+            });
         });
     </script>
 </body>
 </html>
-
