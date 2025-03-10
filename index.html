@@ -812,7 +812,7 @@
             </div>
         </div>
 
-        <button class="copy-btn">Copy Signature</button>
+        <button class="copy-btn" id="copyBtn">Copy Signature</button>
         <p class="footer-text">Pressing "Copy Signature" saves your information.</p>
     </div>
 
@@ -1169,149 +1169,121 @@
                 });
             });
 
-            // Copy Signature Handler
-            const copyBtn = document.querySelector('.copy-btn');
-            copyBtn.addEventListener('click', async () => {
-                // Show loading state
-                copyBtn.textContent = 'Processing...';
-                
+            // Function to copy the signature to clipboard
+            async function copySignature() {
                 try {
-                    // Preload all icon images to ensure they're in the browser cache
-                    const preloadIcons = () => {
-                        return new Promise((resolve) => {
-                            const iconImages = document.querySelectorAll('.social-icon img');
-                            let loadedCount = 0;
-                            const totalCount = iconImages.length;
-                            
-                            if (totalCount === 0) {
-                                resolve(); // No icons to preload
-                                return;
-                            }
-                            
-                            iconImages.forEach(img => {
-                                const tempImg = new Image();
-                                tempImg.onload = () => {
-                                    loadedCount++;
-                                    if (loadedCount === totalCount) {
-                                        resolve();
-                                    }
-                                };
-                                tempImg.onerror = () => {
-                                    loadedCount++;
-                                    if (loadedCount === totalCount) {
-                                        resolve();
-                                    }
-                                };
-                                tempImg.src = img.src;
-                            });
-                            
-                            // Set a timeout in case some images fail to load
-                            setTimeout(resolve, 2000);
-                        });
-                    };
-                    
-                    // Wait for icons to preload
+                    // Show loading state
+                    const copyBtn = document.getElementById('copyBtn');
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = 'Copying...';
+                    copyBtn.disabled = true;
+
+                    // Preload icons
                     await preloadIcons();
+
+                    // Get user-entered values
+                    const name = document.querySelector('.name input').value || 'Your Name';
+                    const title = document.querySelector('.title input').value || 'Your Title';
+                    const email = document.querySelector('.email input').value || 'your.email@example.com';
                     
-                    // Get all the user-entered values
-                    const name = document.querySelector('.name input').value;
-                    const title = document.querySelector('.title input').value;
-                    const email = document.querySelector('.email input').value;
-                    const profileImageStyle = document.querySelector('.profile-image').style.backgroundImage;
+                    // Get profile image
+                    const profileImg = document.querySelector('.profile-image');
+                    const profileStyle = window.getComputedStyle(profileImg);
+                    const profileBgImage = profileStyle.backgroundImage;
+                    let profileImgUrl = '';
                     
-                    // Extract the URL from the backgroundImage style
-                    const imageUrl = profileImageStyle ? profileImageStyle.replace(/^url\(['"](.+)['"]\)$/, '$1') : '';
-                    
-                    // Create a temporary container to hold our signature for processing
+                    if (profileBgImage && profileBgImage !== 'none') {
+                        // Extract URL from background-image: url("...")
+                        profileImgUrl = profileBgImage.slice(4, -1).replace(/["']/g, "");
+                    }
+
+                    // Create a temporary container for the signature
                     const tempContainer = document.createElement('div');
-                    tempContainer.style.position = 'absolute';
-                    tempContainer.style.left = '-9999px';
-                    tempContainer.style.top = '0';
-                    document.body.appendChild(tempContainer);
                     
-                    // Create the initial signature HTML
-                    tempContainer.innerHTML = `
-                        <table cellspacing="0" cellpadding="0" border="0" style="background: white; border: 1px solid #eee; border-radius: 12px; width: 400px; margin: 0; padding: 16px;">
-                            <tr>
-                                <td width="48" style="vertical-align: top; padding-right: 12px;">
-                                    ${imageUrl ? `<img src="${imageUrl}" width="48" height="48" style="border-radius: 8px; display: block;">` : ''}
-                                </td>
-                                <td style="vertical-align: top; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;">
-                                    <table cellspacing="0" cellpadding="0" border="0" style="line-height: 1.4;">
-                                        <tr>
-                                            <td style="font-size: 16px; font-weight: 500; color: #1d1d1f; padding-bottom: 2px;">
-                                                ${name || 'Your Name'}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td style="font-size: 14px; color: #86868b; padding-bottom: 2px;">
-                                                ${title || 'Your Title'}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td style="font-size: 14px; color: #86868b; padding-bottom: 8px;">
-                                                <a href="mailto:${email}" style="color: #86868b; text-decoration: none;">${email || 'your@email.com'}</a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td style="padding-top: 4px;" id="socialIconsContainer"></td>
-                                        </tr>
-                                    </table>
-                                </td>
-                            </tr>
-                        </table>
-                    `;
+                    // Start building the signature HTML with a table for better email compatibility
+                    let signatureHTML = `
+                    <table cellpadding="0" cellspacing="0" style="font-family: Arial, sans-serif; color: #333333; border-collapse: collapse;">
+                        <tr>
+                            <td style="vertical-align: top; padding-right: 15px;">`;
                     
-                    // Add social icons to the temporary container
-                    const socialIconsContainer = tempContainer.querySelector('#socialIconsContainer');
-                    const socialIcons = Array.from(document.querySelectorAll('.social-icon'))
-                        .filter(icon => !icon.classList.contains('add-social-btn'));
-                    
-                    for (const icon of socialIcons) {
-                        const platform = icon.dataset.platform;
-                        const url = icon.dataset.url;
-                        
-                        // Handle special URL protocols
-                        let href = url;
-                        if (platform === 'phone') {
-                            href = `tel:${url}`;
-                        } else if (platform === 'calendar') {
-                            href = url;
-                        }
-                        
-                        // Clone the icon image
-                        const originalImg = icon.querySelector('img');
-                        if (originalImg) {
-                            const iconLink = document.createElement('a');
-                            iconLink.href = href;
-                            iconLink.target = '_blank';
-                            iconLink.style.textDecoration = 'none';
-                            iconLink.style.paddingRight = '8px';
-                            
-                            const iconImg = document.createElement('img');
-                            iconImg.src = originalImg.src;
-                            iconImg.alt = platform;
-                            iconImg.width = 20;
-                            iconImg.height = 20;
-                            iconImg.style.border = '0';
-                            
-                            iconLink.appendChild(iconImg);
-                            socialIconsContainer.appendChild(iconLink);
+                    // Add profile image if available
+                    if (profileImgUrl) {
+                        // Convert profile image to base64
+                        try {
+                            const profileImgBase64 = await imageToBase64(profileImgUrl);
+                            signatureHTML += `<img src="${profileImgBase64}" alt="${name}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">`;
+                        } catch (error) {
+                            console.error('Error converting profile image:', error);
+                            // Fallback to original URL if conversion fails
+                            signatureHTML += `<img src="${profileImgUrl}" alt="${name}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">`;
                         }
                     }
                     
-                    // Create a contenteditable div to hold our signature for copying
-                    const editable = document.createElement('div');
-                    editable.contentEditable = 'true';
-                    editable.style.cssText = 'position: fixed; left: -9999px; top: 0';
-                    document.body.appendChild(editable);
+                    signatureHTML += `
+                            </td>
+                            <td style="vertical-align: middle; padding-left: 15px; border-left: 2px solid #dddddd;">
+                                <p style="margin: 0; font-size: 18px; font-weight: bold;">${name}</p>
+                                <p style="margin: 5px 0 15px 0; font-size: 14px; color: #666666;">${title}</p>
+                                <p style="margin: 0; font-size: 14px;">
+                                    <a href="mailto:${email}" style="color: #333333; text-decoration: none;">${email}</a>
+                                </p>
+                                <div style="margin-top: 10px;">`;
                     
-                    // Insert the signature HTML
-                    editable.innerHTML = tempContainer.innerHTML;
+                    // Add social icons
+                    const socialIcons = document.querySelectorAll('.social-icon');
+                    for (const icon of socialIcons) {
+                        if (icon.classList.contains('add-social-btn')) continue;
+                        
+                        const platform = icon.dataset.platform;
+                        const url = icon.dataset.url;
+                        
+                        if (url) {
+                            let href = url;
+                            
+                            // Handle special protocols
+                            if (platform === 'phone') {
+                                href = `tel:${url}`;
+                            } else if (platform === 'calendar') {
+                                href = `https://calendly.com/${url}`;
+                            }
+                            
+                            // Get the icon image
+                            const iconImg = icon.querySelector('img');
+                            if (iconImg) {
+                                try {
+                                    // Convert icon to base64
+                                    const iconSrc = iconImg.src;
+                                    const iconBase64 = await imageToBase64(iconSrc);
+                                    
+                                    signatureHTML += `
+                                    <a href="${href}" style="text-decoration: none; margin-right: 8px;" target="_blank">
+                                        <img src="${iconBase64}" alt="${platform}" style="width: 20px; height: 20px; border: none;">
+                                    </a>`;
+                                } catch (error) {
+                                    console.error(`Error converting ${platform} icon:`, error);
+                                    // Fallback to original icon URL
+                                    signatureHTML += `
+                                    <a href="${href}" style="text-decoration: none; margin-right: 8px;" target="_blank">
+                                        <img src="${iconImg.src}" alt="${platform}" style="width: 20px; height: 20px; border: none;">
+                                    </a>`;
+                                }
+                            }
+                        }
+                    }
                     
-                    // Select the content
+                    signatureHTML += `
+                                </div>
+                            </td>
+                        </tr>
+                    </table>`;
+                    
+                    // Set the HTML to the temporary container
+                    tempContainer.innerHTML = signatureHTML;
+                    document.body.appendChild(tempContainer);
+                    
+                    // Create a range and select the content
                     const range = document.createRange();
-                    range.selectNodeContents(editable);
+                    range.selectNodeContents(tempContainer);
                     
                     const selection = window.getSelection();
                     selection.removeAllRanges();
@@ -1320,38 +1292,96 @@
                     // Copy the content
                     document.execCommand('copy');
                     
-                    // Cleanup
-                    document.body.removeChild(editable);
-                    document.body.removeChild(tempContainer);
+                    // Clean up
                     selection.removeAllRanges();
+                    document.body.removeChild(tempContainer);
                     
+                    // Show success message
                     copyBtn.textContent = 'Copied!';
                     setTimeout(() => {
-                        copyBtn.textContent = 'Copy Signature';
+                        copyBtn.textContent = originalText;
+                        copyBtn.disabled = false;
                     }, 2000);
-                } catch (err) {
-                    console.error('Failed to copy:', err);
-                    copyBtn.textContent = 'Failed to copy';
+                    
+                } catch (error) {
+                    console.error('Error copying signature:', error);
+                    const copyBtn = document.getElementById('copyBtn');
+                    copyBtn.textContent = 'Error!';
                     setTimeout(() => {
                         copyBtn.textContent = 'Copy Signature';
+                        copyBtn.disabled = false;
                     }, 2000);
                 }
-            });
+            }
 
-            // Helper function to get icon paths
-            function getIconPath(platform) {
-                // Simple SVG paths for each platform
-                const paths = {
-                    linkedin: "M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z",
-                    twitter: "M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.897-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.213-.3 0-.593-.028-.877-.082.593 1.85 2.313 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z",
-                    github: "M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z",
-                    facebook: "M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3V.5h-4.33C10.24.5 9.5 3.44 9.5 5.32v2.15h-3v4h3v12h5v-12h3.85l.42-4z",
-                    instagram: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z",
-                    youtube: "M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z",
-                    tiktok: "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.04-1.36-1.36-1.36-1.36-1.75-2.7-1.61-.99.48 1.04 1.36 1.36 2.7 2.7 1.04.48 1.04 1.36 1.56 2.13 1.04 1.56-.48 1.56-1.36 1.04-1.8.48z",
-                    medium: "M2.846 6.887c.03-.295-.083-.586-.303-.784l-2.24-2.7v-.403h6.958l5.378 11.795 4.728-11.795h6.633v.403l-1.916 1.837c-.165.126-.247.333-.213.538v13.498c-.034.204.048.411.213.537l1.871 1.837v.403h-9.412v-.403l1.939-1.882c.19-.19.19-.246.19-.537v-10.91l-5.389 13.688h-.728l-6.275-13.688v9.174c-.052.385.076.774.37.728 1.052l2.521 3.058v.404h-7.148v-.404l2.521-3.058c.27-.279.39-.67.325-1.052v-10.608z"
-                };
-                return paths[platform] || '';
+            // Function to convert image to base64
+            async function imageToBase64(url) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        
+                        const dataURL = canvas.toDataURL('image/png');
+                        resolve(dataURL);
+                    };
+                    img.onerror = function() {
+                        reject(new Error('Failed to load image'));
+                    };
+                    img.src = url;
+                    
+                    // Handle CORS issues by setting a timeout
+                    setTimeout(() => {
+                        if (!img.complete) {
+                            reject(new Error('Image load timed out'));
+                        }
+                    }, 5000);
+                });
+            }
+
+            // Function to preload all icons
+            async function preloadIcons() {
+                return new Promise((resolve) => {
+                    const socialIcons = document.querySelectorAll('.social-icon img');
+                    if (socialIcons.length === 0) {
+                        resolve();
+                        return;
+                    }
+                    
+                    let loadedCount = 0;
+                    const totalIcons = socialIcons.length;
+                    
+                    // Set a timeout to resolve anyway after 2 seconds
+                    const timeout = setTimeout(() => {
+                        console.log('Icon preloading timed out');
+                        resolve();
+                    }, 2000);
+                    
+                    socialIcons.forEach(icon => {
+                        const img = new Image();
+                        img.onload = () => {
+                            loadedCount++;
+                            if (loadedCount === totalIcons) {
+                                clearTimeout(timeout);
+                                resolve();
+                            }
+                        };
+                        img.onerror = () => {
+                            loadedCount++;
+                            console.error(`Failed to preload icon: ${icon.src}`);
+                            if (loadedCount === totalIcons) {
+                                clearTimeout(timeout);
+                                resolve();
+                            }
+                        };
+                        img.src = icon.src;
+                    });
+                });
             }
 
             const tutorialBtn = document.querySelector('.tutorial-btn');
@@ -1386,6 +1416,26 @@
                     hideModal();
                 }
             });
+
+            // Copy Signature Handler
+            const copyBtn = document.getElementById('copyBtn');
+            copyBtn.addEventListener('click', copySignature);
+
+            // Helper function to get icon paths
+            function getIconPath(platform) {
+                // Simple SVG paths for each platform
+                const paths = {
+                    linkedin: "M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z",
+                    twitter: "M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.897-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z",
+                    github: "M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z",
+                    facebook: "M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3V.5h-4.33C10.24.5 9.5 3.44 9.5 5.32v2.15h-3v4h3v12h5v-12h3.85l.42-4z",
+                    instagram: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z",
+                    youtube: "M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z",
+                    tiktok: "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z",
+                    medium: "M2.846 6.887c.03-.295-.083-.586-.303-.784l-2.24-2.7v-.403h6.958l5.378 11.795 4.728-11.795h6.633v.403l-1.916 1.837c-.165.126-.247.333-.213.538v13.498c-.034.204.048.411.213.537l1.871 1.837v.403h-9.412v-.403l1.939-1.882c.19-.19.19-.246.19-.537v-10.91l-5.389 13.688h-.728l-6.275-13.688v9.174c-.052.385.076.774.347 1.052l2.521 3.058v.404h-7.148v-.404l2.521-3.058c.27-.279.39-.67.325-1.052v-10.608z"
+                };
+                return paths[platform] || '';
+            }
         });
     </script>
 </body>
